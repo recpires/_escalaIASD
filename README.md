@@ -2,6 +2,8 @@
 
 ![Logo IASD](public/logo-iasd.png)
 
+![Login Preview](public/login-preview.png)
+
 ## Sobre o Projeto
 
 O **Sistema de Escala IASD** é uma aplicação Web Progressiva (PWA) desenvolvida para facilitar a gestão de escalas dos ministérios da Igreja Adventista do Sétimo Dia. O sistema permite que membros marquem sua disponibilidade e que líderes organizem as escalas de forma visual e eficiente.
