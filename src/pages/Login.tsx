@@ -31,8 +31,9 @@ export const Login = () => {
         className="absolute inset-0 z-0"
         style={{ 
           backgroundImage: "url('/login-bg.jpg')", 
-          backgroundSize: 'cover', 
-          backgroundPosition: 'center' 
+          backgroundSize: '100% 100%', 
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
         }}
       >
         <div className="absolute inset-0 bg-black/30" />
