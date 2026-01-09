@@ -1,73 +1,57 @@
-# React + TypeScript + Vite
+# Sistema de Escala IASD
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![Logo IASD](public/logo-iasd.png)
 
-Currently, two official plugins are available:
+## Sobre o Projeto
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+O **Sistema de Escala IASD** é uma aplicação Web Progressiva (PWA) desenvolvida para facilitar a gestão de escalas dos ministérios da Igreja Adventista do Sétimo Dia. O sistema permite que membros marquem sua disponibilidade e que líderes organizem as escalas de forma visual e eficiente.
 
-## React Compiler
+## Funcionalidades Principais
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Para Membros
+- **Marcação de Disponibilidade**: Calendário interativo para selecionar os dias livres no mês.
+- **Visualização de Escalas**: Acesso rápido às datas em que foi escalado.
+- **Painel Pessoal**: Visualização clara de status e próximos compromissos.
 
-## Expanding the ESLint configuration
+### Para Líderes
+- **Gestão de Equipes**: Controle total sobre os membros de cada ministério (Música, Sonoplastia, Diáconos, etc.).
+- **Criação de Escalas**: Interface intuitiva para escalar membros baseada na disponibilidade informada.
+- **Personalização**: Opção de adicionar capa personalizada para o ministério.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Tecnologias Utilizadas
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- **Frontend**: React 19, TypeScript
+- **Build Tool**: Vite
+- **Estilização**: Tailwind CSS 3
+- **Ícones**: Lucide React
+- **PWA**: Vite Plugin PWA (Instalável em Mobile/Desktop)
+- **Gerenciamento de Estado**: React Context API
+- **Datas**: Date-fns
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Como Rodar o Projeto
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+1. Clone o repositório:
+```bash
+git clone https://github.com/seu-usuario/escalaiasd.git
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+2. Instale as dependências:
+```bash
+npm install
 ```
+
+3. Execute o servidor de desenvolvimento:
+```bash
+npm run dev
+```
+
+4. Acesse no navegador:
+`http://localhost:5173`
+
+## Deploy
+
+O projeto está configurado para deploy na Vercel. Certifique-se de usar as configurações padrão do Vite.
+
+## Licença
+
+Este projeto é de uso interno para gestão de ministérios.

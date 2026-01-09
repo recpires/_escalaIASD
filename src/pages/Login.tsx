@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Church } from 'lucide-react';
+
 
 export const Login = () => {
   const [email, setEmail] = useState('');
@@ -25,11 +25,23 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg border border-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 relative overflow-hidden">
+      {/* Background Image & Overlay */}
+      <div 
+        className="absolute inset-0 z-0"
+        style={{ 
+          backgroundImage: "url('/login-bg.jpg')", 
+          backgroundSize: 'cover', 
+          backgroundPosition: 'center' 
+        }}
+      >
+        <div className="absolute inset-0 bg-black/30" />
+      </div>
+
+      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg border border-gray-100 relative z-10">
         <div className="text-center">
-          <div className="mx-auto h-16 w-16 bg-sda-blue/10 rounded-full flex items-center justify-center mb-4">
-            <Church className="h-8 w-8 text-sda-blue" />
+          <div className="mx-auto h-24 w-24 flex items-center justify-center mb-4">
+            <img src="/logo-iasd-clean.png" alt="Logo IASD" className="h-full w-full object-contain" />
           </div>
           <h2 className="mt-2 text-3xl font-bold text-gray-900">Escala IASD</h2>
           <p className="mt-2 text-sm text-gray-600">
