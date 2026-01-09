@@ -8,6 +8,8 @@ export interface User {
   ministryIds: string[]; // IDs of ministries the user belongs to
   avatarUrl?: string;
   password?: string; // For mock auth
+  singerName?: string;
+  phone?: string;
 }
 
 export interface Ministry {
