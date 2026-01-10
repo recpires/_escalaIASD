@@ -4,6 +4,7 @@ import { Button } from '../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, User, Check } from 'lucide-react';
 import { Calendar } from '../components/Calendar';
+import { BibleVerse } from '../components/BibleVerse';
 import type { Schedule } from '../types';
 
 
@@ -41,6 +42,7 @@ export const Dashboard = () => {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <BibleVerse />
         {currentUser.role === 'leader' ? (
           <LeaderDashboard />
         ) : (
@@ -160,6 +162,7 @@ const MemberDashboard = () => {
 
 const LeaderDashboard = () => {
   const { currentUser, ministries, users, availabilities, schedules, updateSchedule, updateMinistryImage } = useData();
+  const [viewMode, setViewMode] = React.useState<'management' | 'personal'>('management');
   const [selectedMinistryId, setSelectedMinistryId] = React.useState<string | null>(null);
   const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());
   
@@ -205,9 +208,51 @@ const LeaderDashboard = () => {
     });
   };
 
+  if (viewMode === 'personal') {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-center mb-6">
+          <div className="bg-white p-1 rounded-lg border border-gray-200 inline-flex">
+            <button
+              onClick={() => setViewMode('management')}
+              className="px-4 py-2 rounded-md text-sm font-medium text-gray-500 hover:text-gray-900"
+            >
+              Gerenciar Escalas
+            </button>
+            <button
+              onClick={() => setViewMode('personal')}
+              className="px-4 py-2 rounded-md text-sm font-medium bg-sda-blue text-white shadow-sm"
+            >
+              Minha Agenda
+            </button>
+          </div>
+        </div>
+        <MemberDashboard />
+      </div>
+    );
+  }
+
   if (!selectedMinistryId) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="space-y-6">
+         <div className="flex justify-center mb-6">
+          <div className="bg-white p-1 rounded-lg border border-gray-200 inline-flex">
+            <button
+              onClick={() => setViewMode('management')}
+              className="px-4 py-2 rounded-md text-sm font-medium bg-sda-blue text-white shadow-sm"
+            >
+              Gerenciar Escalas
+            </button>
+            <button
+              onClick={() => setViewMode('personal')}
+              className="px-4 py-2 rounded-md text-sm font-medium text-gray-500 hover:text-gray-900"
+            >
+              Minha Agenda
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {ledMinistries.map(m => (
           <div key={m.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleMinistrySelect(m.id)}>
              <div className="h-32 bg-gray-200 relative">
@@ -223,6 +268,7 @@ const LeaderDashboard = () => {
              </div>
           </div>
         ))}
+      </div>
       </div>
     );
   }
