@@ -130,13 +130,25 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           role: data.role,
           ministryIds: data.ministry_ids || []
         });
+        return true;
       }
+      return false;
     } catch (error) {
       console.error('Error fetching user profile:', error);
+      return false;
     } finally {
         console.log(`[fetchCurrentUser] Finished for ${userId}`);
     }
   };
+
+  // ... (fetchInitialData and setupSubscriptions remain the same) ... Since I cannot skip lines effectively without Context, I will assume the user has the file open and I am targeting the fetchCurrentUser block which appeared earlier in previous turn, but wait. `replace_file_content` targets lines.
+  // The line numbers in previous `view_file` (Step 492) showed fetchCurrentUser at line 85.
+  // BUT I am using `replace_file_content` which replaces a range.
+  // I need to be careful with `login` function which is further down (line 264).
+  // I should probably use `multi_replace_file_content` to update BOTH `fetchCurrentUser` and `login`.
+  
+  // Let's cancel this call and use multi_replace.
+
 
   const fetchInitialData = async () => {
       // Fetch Ministries
@@ -280,12 +292,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           return false;
       }
       
+      let profileLoaded = false;
       if (data.user) {
           // Explicitly wait for profile to be loaded before returning
-          await fetchCurrentUser(data.user.id);
+          profileLoaded = await fetchCurrentUser(data.user.id);
       }
       
-      return !!data.user;
+      return !!data.user && profileLoaded;
   };
 
   const logout = () => {
