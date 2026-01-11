@@ -55,9 +55,9 @@ export const Register = () => {
       
       // Short delay to allow subscription to fire if auto-login happened
       setTimeout(() => navigate('/dashboard'), 500); 
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert('Erro ao criar conta. Tente novamente.');
+      alert(`Erro ao criar conta: ${error.message || 'Erro desconhecido'}`);
     }
   };
 
