@@ -16,6 +16,7 @@ export interface Ministry {
   id: string;
   name: string;
   imageUrl?: string;
+  color?: string; // Hex color for calendar
 }
 
 // Stores availability for a specific user.
@@ -31,6 +32,13 @@ export interface Schedule {
   ministryId: string;
   date: string; // ISO yyyy-MM-dd
   memberIds: string[];
+  // Mapping of memberId -> details
+  memberDetails?: {
+    [memberId: string]: {
+      singerName?: string;
+      phone?: string;
+    }
+  };
 }
 
 export interface AppState {

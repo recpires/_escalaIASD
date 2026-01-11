@@ -54,41 +54,12 @@ export const Dashboard = () => {
 };
 
 const MemberDashboard = () => {
-  const { currentUser, setAvailability, availabilities, ministries, schedules } = useData();
-  const [selectedDates, setSelectedDates] = React.useState<string[]>([]);
-  const [isSaving, setIsSaving] = React.useState(false);
-
-  // Load existing availability
-  React.useEffect(() => {
-    if (currentUser) {
-      const userAvail = availabilities.find(a => a.userId === currentUser.id);
-      if (userAvail) {
-        setSelectedDates(userAvail.dates);
-      }
-    }
-  }, [currentUser, availabilities]);
-
-  const handleDateClick = (dateStr: string) => {
-    setSelectedDates(prev => {
-      if (prev.includes(dateStr)) {
-        return prev.filter(d => d !== dateStr);
-      } else {
-        return [...prev, dateStr];
-      }
-    });
-  };
-
-  const handleSave = () => {
-    if (currentUser) {
-      setIsSaving(true);
-      // Simulate network delay for "feel"
-      setTimeout(() => {
-        setAvailability(currentUser.id, selectedDates);
-        setIsSaving(false);
-        alert('Disponibilidade salva com sucesso!');
-      }, 500);
-    }
-  };
+  const { currentUser, ministries, schedules, updateSchedule } = useData();
+  const [bookingDate, setBookingDate] = React.useState<string | null>(null);
+  const [showMinistryModal, setShowMinistryModal] = React.useState(false);
+  const [showSingerModal, setShowSingerModal] = React.useState(false);
+  const [singerData, setSingerData] = React.useState({ name: '', phone: '' });
+  const [selectedMinistryId, setSelectedMinistryId] = React.useState<string | null>(null);
 
   const userMinistries = ministries.filter(m => currentUser?.ministryIds.includes(m.id));
   
@@ -101,61 +72,207 @@ const MemberDashboard = () => {
       .sort((a: Schedule, b: Schedule) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [currentUser, schedules]);
 
-  return (
-    <div className="space-y-8">
-      {/* My Upcoming Schedules */}
-      {mySchedules.length > 0 && (
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-sda-gold/30 bg-gradient-to-r from-white to-orange-50">
-          <h2 className="text-xl font-bold text-sda-blue mb-4 flex items-center">
-             <Check className="w-6 h-6 mr-2 text-sda-gold" />
-             Minhas Escalas Confirmadas
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {mySchedules.map(schedule => {
-               const ministry = ministries.find(m => m.id === schedule.ministryId);
-               return (
-                 <div key={schedule.id} className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p className="font-bold text-gray-900">{new Date(schedule.date).toLocaleDateString('pt-BR')}</p>
-                        <p className="text-sm text-gray-600">{ministry?.name}</p>
-                    </div>
-                    <div className="h-8 w-1 bg-sda-gold rounded-full"></div>
-                 </div>
-               );
-            })}
-          </div>
-        </div>
-      )}
+  // Compute calendar metadata (colored dots/backgrounds for scheduled dates)
+  const dateMetadata = React.useMemo(() => {
+     const meta: Record<string, { color?: string, selected?: boolean, label?: string }> = {};
+     
+     // Mark scheduled dates
+     mySchedules.forEach(s => {
+         const m = ministries.find(min => min.id === s.ministryId);
+         if (m) {
+             // If multiple on same day? Last one wins or we could blend. 
+             // Requirement says "duas cores de agendamento". Simple override for now.
+             meta[s.date] = {
+                 color: m.color || '#3B82F6',
+                 selected: true,
+                 label: m.name
+             };
+         }
+     });
+     return meta;
+  }, [mySchedules, ministries]);
 
+  const handleDateClick = (dateStr: string) => {
+    // If already scheduled on this date for this ministry, maybe we want to Remove?
+    // For now, let's assume clicking allows Adding/Modifying.
+    setBookingDate(dateStr);
+    
+    // Reset form states
+    setSingerData({ name: currentUser?.name || '', phone: '' }); 
+    
+    if (userMinistries.length > 1) {
+        setShowMinistryModal(true);
+    } else if (userMinistries.length === 1) {
+         handleMinistrySelect(userMinistries[0].id, dateStr);
+    }
+  };
+
+  const handleMinistrySelect = (ministryId: string, dateStr: string | null) => {
+      const date = dateStr || bookingDate;
+      if (!date) return;
+
+      setSelectedMinistryId(ministryId);
+      setShowMinistryModal(false);
+
+      if (ministryId === '1') { // Music Ministry
+          setShowSingerModal(true);
+      } else {
+          confirmBooking(ministryId, date);
+      }
+  };
+
+  const confirmBooking = (ministryId: string, date: string, details?: { singerName: string, phone: string }) => {
+      if (!currentUser) return;
+
+      // Find existing schedule or create new
+      // Logic: Is there a schedule for this Ministry on this Date?
+      const existingSchedule = schedules.find(s => s.ministryId === ministryId && s.date === date);
+      
+      let newMemberIds = existingSchedule ? [...existingSchedule.memberIds] : [];
+      if (!newMemberIds.includes(currentUser.id)) {
+          newMemberIds.push(currentUser.id);
+      } else {
+          // If already scheduled, maybe toggle OFF? 
+          // But the prompt says "aparecer uma msg... e quando selecionar automaticamente ja devera ser agendado".
+          // It implies "Agendar". If I click again, maybe "Desagendar"?
+          // Let's assume this flow is for "Agendar". 
+          // If I want to toggle off, I might need a different interaction or just toggle here.
+          // Let's Toggle Off if no details are required.
+          if (!details) {
+             newMemberIds = newMemberIds.filter(id => id !== currentUser.id);
+             alert('Agendamento cancelado para esta data.');
+          } else {
+              alert('Dados atualizados.');
+          }
+      }
+
+      const updatedSchedule: Schedule = {
+          id: existingSchedule?.id || Math.random().toString(36).substr(2, 9),
+          ministryId,
+          date,
+          memberIds: newMemberIds,
+          memberDetails: details ? {
+              ...existingSchedule?.memberDetails,
+              [currentUser.id]: details
+          } : existingSchedule?.memberDetails
+      };
+
+      updateSchedule(updatedSchedule);
+      
+      // Close all modals
+      setShowSingerModal(false);
+      setShowMinistryModal(false);
+      setBookingDate(null);
+  };
+
+  return (
+    <div className="space-y-8 relative">
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Minha Disponibilidade</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Minha Agenda</h2>
         <p className="text-gray-600 mb-6 text-sm">
-            Selecione no calendário abaixo os dias que você poderá servir na igreja. 
-            Isso ajudará seus líderes na confecção das escalas.
+            Selecione uma data para se agendar. Se você participa de múltiplos ministérios, escolha qual deseja agendar.
         </p>
         
         <div className="flex flex-col md:flex-row gap-8 items-start justify-center">
-            <Calendar selectedDates={selectedDates} onDateClick={handleDateClick} />
+            <Calendar 
+                dateMetadata={dateMetadata} 
+                onDateClick={handleDateClick} 
+            />
             
-            <div className="w-full md:w-64 space-y-6">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="font-semibold text-gray-900 mb-2">Seus Ministérios</h3>
-                    <ul className="space-y-2">
-                        {userMinistries.map(m => (
-                            <li key={m.id} className="text-sm text-gray-600 flex items-center">
-                                <span className="w-2 h-2 bg-sda-gold rounded-full mr-2"></span>
-                                {m.name}
-                            </li>
-                        ))}
-                    </ul>
+            <div className="w-full md:w-64 space-y-4">
+                <h3 className="font-semibold text-gray-900">Legenda</h3>
+                <div className="space-y-2">
+                    {userMinistries.map(m => (
+                        <div key={m.id} className="flex items-center text-sm text-gray-600">
+                            <span 
+                                className="w-3 h-3 rounded-full mr-2"
+                                style={{ backgroundColor: m.color || '#ccc' }}
+                            ></span>
+                            {m.name}
+                        </div>
+                    ))}
                 </div>
-
-                <Button onClick={handleSave} fullWidth disabled={isSaving}>
-                    {isSaving ? 'Salvando...' : 'Salvar Disponibilidade'}
-                </Button>
+                
+                {mySchedules.length > 0 && (
+                    <div className="pt-4 border-t border-gray-100">
+                        <h4 className="font-medium text-gray-900 mb-2 text-sm">Próximas Escalas</h4>
+                        <div className="max-h-48 overflow-y-auto space-y-2">
+                            {mySchedules.slice(0, 5).map(s => {
+                                const m = ministries.find(min => min.id === s.ministryId);
+                                return (
+                                    <div key={s.id} className="text-xs bg-gray-50 p-2 rounded border border-gray-100">
+                                        <div className="font-bold text-gray-800">{new Date(s.date).toLocaleDateString('pt-BR')}</div>
+                                        <div className="text-gray-500" style={{ color: m?.color }}>{m?.name}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
       </div>
+
+      {/* Ministry Selection Modal */}
+      {showMinistryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
+                <h3 className="text-lg font-bold text-gray-900 text-center">Escolha o Ministério</h3>
+                <p className="text-sm text-gray-500 text-center">Para qual ministério você deseja agendar dia {bookingDate && new Date(bookingDate).toLocaleDateString('pt-BR')}?</p>
+                
+                <div className="grid gap-3">
+                    {userMinistries.map(m => (
+                        <button
+                            key={m.id}
+                            onClick={() => handleMinistrySelect(m.id, bookingDate)}
+                            className="w-full p-4 rounded-lg border-2 border-gray-100 hover:border-sda-blue hover:bg-sda-blue/5 transition-all flex items-center justify-between group"
+                        >
+                            <span className="font-medium text-gray-700 group-hover:text-sda-blue">{m.name}</span>
+                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: m.color }}></div>
+                        </button>
+                    ))}
+                </div>
+                <Button variant="ghost" fullWidth onClick={() => setShowMinistryModal(false)}>Cancelar</Button>
+            </div>
+        </div>
+      )}
+
+      {/* Singer Details Modal */}
+      {showSingerModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
+                <h3 className="text-lg font-bold text-gray-900 text-center">Detalhes do Cantor(a)</h3>
+                <div className="space-y-3">
+                    <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Nome do Cantor/Grupo</label>
+                        <input 
+                            type="text"
+                            value={singerData.name}
+                            onChange={(e) => setSingerData({...singerData, name: e.target.value})}
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-sda-blue focus:ring-sda-blue sm:text-sm p-2 border"
+                            placeholder="Ex: Fulano de Tal"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Telefone / WhatsApp</label>
+                        <input 
+                            type="text"
+                            value={singerData.phone}
+                            onChange={(e) => setSingerData({...singerData, phone: e.target.value})}
+                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-sda-blue focus:ring-sda-blue sm:text-sm p-2 border"
+                            placeholder="(00) 00000-0000"
+                        />
+                    </div>
+                </div>
+                <div className="flex gap-3 pt-2">
+                    <Button variant="ghost" fullWidth onClick={() => setShowSingerModal(false)}>Cancelar</Button>
+                    <Button fullWidth onClick={() => bookingDate && selectedMinistryId && confirmBooking(selectedMinistryId, bookingDate, { singerName: singerData.name, phone: singerData.phone })}>
+                        Confirmar
+                    </Button>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -320,8 +437,8 @@ const LeaderDashboard = () => {
                         <div className="space-y-2">
                             {ministryMembers.map(member => {
                                 const availability = availabilities.find(a => a.userId === member.id);
-                                const isAvailable = availability?.dates.includes(dateStr);
                                 const isScheduled = scheduledMemberIds.includes(member.id);
+                                const isAvailable = availability?.dates.includes(dateStr) || isScheduled;
 
                                 return (
                                     <div key={member.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50">

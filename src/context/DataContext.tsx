@@ -16,10 +16,10 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 
 // Initial Mock Data
 const INITIAL_MINISTRIES: Ministry[] = [
-  { id: '1', name: 'Música', imageUrl: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&q=80&w=500' },
-  { id: '2', name: 'Diáconos', imageUrl: 'https://images.unsplash.com/photo-1576089172869-4f5f6f31562e?auto=format&fit=crop&q=80&w=500' },
-  { id: '3', name: 'Diaconisas', imageUrl: 'https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&q=80&w=500' },
-  { id: '4', name: 'Sonoplastia', imageUrl: 'https://images.unsplash.com/photo-1516280440614-6697288d5d38?auto=format&fit=crop&q=80&w=500' },
+  { id: '1', name: 'Música', imageUrl: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&q=80&w=500', color: '#3B82F6' }, // Blue
+  { id: '2', name: 'Diáconos', imageUrl: 'https://images.unsplash.com/photo-1576089172869-4f5f6f31562e?auto=format&fit=crop&q=80&w=500', color: '#10B981' }, // Green
+  { id: '3', name: 'Diaconisas', imageUrl: 'https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&q=80&w=500', color: '#8B5CF6' }, // Purple
+  { id: '4', name: 'Sonoplastia', imageUrl: 'https://images.unsplash.com/photo-1516280440614-6697288d5d38?auto=format&fit=crop&q=80&w=500', color: '#F59E0B' }, // Amber
 ];
 
 export const DataProvider = ({ children }: { children: ReactNode }) => {

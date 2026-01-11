@@ -19,9 +19,7 @@ export const Register = () => {
     email: '',
     password: '',
     role: 'member' as Role,
-    ministryIds: [] as string[],
-    singerName: '',
-    phone: ''
+    ministryIds: [] as string[]
   });
 
   const handleMinistryToggle = (id: string) => {
@@ -46,9 +44,7 @@ export const Register = () => {
       email: formData.email,
       role: formData.role,
       ministryIds: formData.ministryIds,
-      password: formData.password,
-      singerName: formData.singerName,
-      phone: formData.phone
+      password: formData.password
     };
 
     addUser(newUser);
@@ -146,24 +142,7 @@ export const Register = () => {
             </div>
           </div>
 
-          {/* Conditional Fields for Music Ministry */}
-          {formData.ministryIds.includes('1') && (
-            <div className="space-y-4 pt-4 border-t border-gray-100 animate-fadeIn">
-              <h3 className="text-sm font-medium text-gray-900">Informações Adicionais (Música)</h3>
-              <Input
-                label="Nome do Cantor / Grupo"
-                value={formData.singerName}
-                onChange={e => setFormData({...formData, singerName: e.target.value})}
-                placeholder="Como gostaria de ser chamado na escala"
-              />
-              <Input
-                label="Telefone / WhatsApp"
-                value={formData.phone}
-                onChange={e => setFormData({...formData, phone: e.target.value})}
-                placeholder="(00) 00000-0000"
-              />
-            </div>
-          )}
+          {/* Conditional Fields for Music Ministry - Removed as per request */}\n
 
           <Button type="submit" fullWidth>
             Criar Conta
