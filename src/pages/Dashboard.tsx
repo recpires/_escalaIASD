@@ -478,13 +478,22 @@ const LeaderDashboard = () => {
                 <p className="text-sm text-gray-600 mb-2">Data: {new Date(dateStr).toLocaleDateString('pt-BR')}</p>
                 <p className="text-sm text-gray-600 mb-4">Total Escalados: {scheduledMemberIds.length}</p>
                 
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                     {scheduledMemberIds.map(id => {
                         const member = users.find(u => u.id === id);
+                        const details = currentSchedule?.memberDetails?.[id]; // Get details if any
+
                         return (
-                            <li key={id} className="text-sm font-medium text-sda-blue flex items-center">
-                                <Check className="w-4 h-4 mr-2" />
-                                {member?.name}
+                            <li key={id} className="text-sm font-medium text-sda-blue flex items-start">
+                                <Check className="w-4 h-4 mr-2 mt-1 flex-shrink-0" />
+                                <div className="flex flex-col">
+                                    <span>{member?.name}</span>
+                                    {details?.singerName && (
+                                        <span className="text-xs text-gray-500 font-normal">
+                                            Cantor(a): <span className="text-gray-700 font-medium">{details.singerName}</span>
+                                        </span>
+                                    )}
+                                </div>
                             </li>
                         );
                     })}
