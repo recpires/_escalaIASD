@@ -84,19 +84,40 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchCurrentUser = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
       
+      // If profile missing, try to create it (fallback for legacy users or failed triggers)
+      if (!data && (error?.code === 'PGRST116' || !error)) { // PGRST116 is 'not found'
+         console.warn("Profile missing, attempting to create...");
+         const { data: userData } = await supabase.auth.getUser();
+         const email = userData.user?.email || '';
+         const name = userData.user?.user_metadata?.name || email.split('@')[0];
+         
+         const { error: insertError } = await supabase.from('profiles').insert({
+             id: userId,
+             name: name,
+             role: 'member' // Default role
+         });
+         
+         if (!insertError) {
+             // Retry fetch
+             const retry = await supabase.from('profiles').select('*').eq('id', userId).single();
+             data = retry.data;
+             error = retry.error;
+         }
+      }
+
       if (error) throw error;
       
       if (data) {
         setCurrentUser({
           id: data.id,
           name: data.name,
-          email: '', // Email comes from auth.user usually
+          email: '',
           role: data.role,
           ministryIds: data.ministry_ids || []
         });
