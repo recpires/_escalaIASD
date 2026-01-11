@@ -151,10 +151,6 @@ export const Register = () => {
             </div>
           </div>
 
-          
-
-
-
           <Button type="submit" fullWidth>
             Criar Conta
           </Button>
