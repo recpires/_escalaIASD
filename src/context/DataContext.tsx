@@ -34,7 +34,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
             console.warn("Auth initialization timed out, forcing loading=false");
             setLoading(false);
         }
-    }, 5000);
+    }, 20000);
 
     const initAuth = async () => {
       console.log("Initializing Auth...");
@@ -85,11 +85,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const fetchCurrentUser = async (userId: string): Promise<{ success: boolean; error?: string }> => {
     console.log(`[fetchCurrentUser] Starting for ${userId}`);
     try {
-      console.log(`[fetchCurrentUser] Selecting profile...`);
+      console.log(`[fetchCurrentUser] Selecting profile... [VERSION: TIMEOUT-15s]`);
       
-      // Create a timeout promise
+      // Create a timeout promise (Increased to 15s for slower connections)
       const timeoutPromise = new Promise<{ data: any, error: any }>((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout ao buscar perfil')), 10000)
+        setTimeout(() => reject(new Error('Timeout ao buscar perfil (15s limit)')), 15000)
       );
 
       // Race against the actual query
