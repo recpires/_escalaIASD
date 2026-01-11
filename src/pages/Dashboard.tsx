@@ -95,8 +95,6 @@ const MemberDashboard = () => {
   }, [mySchedules, ministries]);
 
   const handleDateClick = (dateStr: string) => {
-    // If already scheduled on this date for this ministry, maybe we want to Remove?
-    // For now, let's assume clicking allows Adding/Modifying.
     setBookingDate(dateStr);
     
     // Reset form states
@@ -116,7 +114,10 @@ const MemberDashboard = () => {
       setSelectedMinistryId(ministryId);
       setShowMinistryModal(false);
 
-      if (ministryId === '1') { // Music Ministry
+      const ministry = ministries.find(m => m.id === ministryId);
+
+      // Check by Name instead of ID '1' which is unstable
+      if (ministry?.name.toLowerCase().includes('música')) { 
           setShowSingerModal(true);
       } else {
           confirmBooking(ministryId, date);
@@ -126,24 +127,51 @@ const MemberDashboard = () => {
   const confirmBooking = (ministryId: string, date: string, details?: { singerName: string, phone: string }) => {
       if (!currentUser) return;
 
-      // Find existing schedule or create new
-      // Logic: Is there a schedule for this Ministry on this Date?
       const existingSchedule = schedules.find(s => s.ministryId === ministryId && s.date === date);
+      const ministry = ministries.find(m => m.id === ministryId);
       
       let newMemberIds = existingSchedule ? [...existingSchedule.memberIds] : [];
-      if (!newMemberIds.includes(currentUser.id)) {
+      const currentCount = newMemberIds.length;
+      const isAdding = !newMemberIds.includes(currentUser.id);
+
+      // --- Scheduling Limits Logic ---
+      if (isAdding) {
+          const checkDate = new Date(date + 'T12:00:00'); // Safe mid-day time to avoid timezone edge cases
+          const isSaturday = checkDate.getDay() === 6;
+
+          if (ministry?.name.toLowerCase().includes('sonoplastia')) {
+               if (currentCount >= 2) {
+                   alert('Limite máximo de 2 pessoas atingido para Sonoplastia neste dia.');
+                   return;
+               }
+          } else if (ministry?.name.toLowerCase().includes('música')) {
+               // "allowing only two max" / "allowed two only on saturday"
+               const limit = isSaturday ? 2 : 1; 
+               if (currentCount >= limit) {
+                   alert(`Limite máximo de ${limit} agendamento(s) para Música neste dia.`);
+                   return;
+               }
+          } else if (ministry?.name.toLowerCase().includes('diácono')) { // Matches Diáconos and Diaconisas
+               if (currentCount >= 4) {
+                   alert('Limite máximo de 4 pessoas atingido para este dia.');
+                   return;
+               }
+          }
+      }
+      // -------------------------------
+
+      if (isAdding) {
           newMemberIds.push(currentUser.id);
+          if (details) alert('Agendamento confirmado!');
       } else {
-          // If already scheduled, maybe toggle OFF? 
-          // But the prompt says "aparecer uma msg... e quando selecionar automaticamente ja devera ser agendado".
-          // It implies "Agendar". If I click again, maybe "Desagendar"?
-          // Let's assume this flow is for "Agendar". 
-          // If I want to toggle off, I might need a different interaction or just toggle here.
-          // Let's Toggle Off if no details are required.
+          // Toggle OFF logic
+          // If detailed modal was NOT involved (quick toggle), allow removing.
+          // If details provided (updating?), update.
           if (!details) {
              newMemberIds = newMemberIds.filter(id => id !== currentUser.id);
              alert('Agendamento cancelado para esta data.');
           } else {
+              // If details passed and already there, assume update details
               alert('Dados atualizados.');
           }
       }
@@ -473,32 +501,84 @@ const LeaderDashboard = () => {
                  </div>
             </div>
             
-            <div className="lg:w-1/3 bg-gray-50 p-6 rounded-xl h-fit">
-                <h3 className="font-bold text-gray-900 mb-4">Resumo da Escala</h3>
-                <p className="text-sm text-gray-600 mb-2">Data: {new Date(dateStr).toLocaleDateString('pt-BR')}</p>
-                <p className="text-sm text-gray-600 mb-4">Total Escalados: {scheduledMemberIds.length}</p>
-                
-                <ul className="space-y-3">
-                    {scheduledMemberIds.map(id => {
-                        const member = users.find(u => u.id === id);
-                        const details = currentSchedule?.memberDetails?.[id]; // Get details if any
+            <div className="lg:w-1/3 space-y-6">
+                <div className="bg-gray-50 p-6 rounded-xl h-fit">
+                    <h3 className="font-bold text-gray-900 mb-4">Resumo da Escala ({new Date(dateStr).toLocaleDateString('pt-BR')})</h3>
+                    <p className="text-sm text-gray-600 mb-4">Total Escalados: {scheduledMemberIds.length}</p>
+                    
+                    <ul className="space-y-3">
+                        {scheduledMemberIds.map(id => {
+                            const member = users.find(u => u.id === id);
+                            const details = currentSchedule?.memberDetails?.[id]; // Get details if any
 
-                        return (
-                            <li key={id} className="text-sm font-medium text-sda-blue flex items-start">
-                                <Check className="w-4 h-4 mr-2 mt-1 flex-shrink-0" />
-                                <div className="flex flex-col">
-                                    <span>{member?.name}</span>
-                                    {details?.singerName && (
-                                        <span className="text-xs text-gray-500 font-normal">
-                                            Cantor(a): <span className="text-gray-700 font-medium">{details.singerName}</span>
-                                        </span>
-                                    )}
-                                </div>
-                            </li>
-                        );
-                    })}
-                </ul>
+                            return (
+                                <li key={id} className="text-sm font-medium text-sda-blue flex items-start">
+                                    <Check className="w-4 h-4 mr-2 mt-1 flex-shrink-0" />
+                                    <div className="flex flex-col">
+                                        <span>{member?.name}</span>
+                                        {details?.singerName && (
+                                            <span className="text-xs text-gray-500 font-normal">
+                                                Cantor(a): <span className="text-gray-700 font-medium">{details.singerName}</span>
+                                            </span>
+                                        )}
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </div>
             </div>
+        </div>
+
+        {/* Monthly Overview Section */}
+        <div className="mt-8 pt-8 border-t border-gray-200">
+             <h3 className="font-bold text-gray-900 mb-4">Escalas do Mês ({selectedDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })})</h3>
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                 {(() => {
+                     const startMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+                     const endMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
+                     
+                     const monthlySchedules = schedules
+                        .filter(s => s.ministryId === selectedMinistryId)
+                        .filter(s => {
+                            const d = new Date(s.date);
+                            return d >= startMonth && d <= endMonth;
+                        })
+                        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                        
+                     if (monthlySchedules.length === 0) {
+                         return <p className="text-gray-500 text-sm italic col-span-3">Nenhuma escala definida para este mês.</p>;
+                     }
+
+                     return monthlySchedules.map(schedule => (
+                         <div 
+                            key={schedule.id} 
+                            onClick={() => setSelectedDate(new Date(schedule.date))}
+                            className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
+                                schedule.date === dateStr ? 'border-sda-blue bg-blue-50' : 'border-gray-200 bg-white hover:border-gray-300'
+                            }`}
+                         >
+                             <div className="flex justify-between items-center mb-2">
+                                 <span className="font-bold text-gray-900 capitalize">
+                                     {new Date(schedule.date).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric' })}
+                                 </span>
+                                 <span className="text-xs font-medium px-2 py-1 bg-gray-100 rounded-full text-gray-600">
+                                     {schedule.memberIds.length} escalados
+                                 </span>
+                             </div>
+                             <div className="space-y-1">
+                                 {schedule.memberIds.slice(0, 3).map(mid => {
+                                     const m = users.find(u => u.id === mid);
+                                     return <div key={mid} className="text-xs text-gray-600 truncate">• {m?.name}</div>
+                                 })}
+                                 {schedule.memberIds.length > 3 && (
+                                     <div className="text-xs text-gray-400 italic">+ {schedule.memberIds.length - 3} outros</div>
+                                 )}
+                             </div>
+                         </div>
+                     ));
+                 })()}
+             </div>
         </div>
       </div>
     </div>
