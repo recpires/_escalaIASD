@@ -11,6 +11,7 @@ interface DataContextType extends AppState {
   login: (email: string, password?: string) => Promise<boolean>;
   logout: () => void;
   setCurrentUser: (user: User | null) => void;
+  loading: boolean;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -21,15 +22,26 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [availabilities, setAvailabilities] = useState<Availability[]>([]);
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Initial Data Fetch & Realtime Subscription
   useEffect(() => {
-    // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        fetchCurrentUser(session.user.id);
+    let mounted = true;
+
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          await fetchCurrentUser(session.user.id);
+        }
+      } catch (error) {
+        console.error("Auth init error:", error);
+      } finally {
+        if (mounted) setLoading(false);
       }
-    });
+    };
+
+    initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
@@ -43,9 +55,13 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setupSubscriptions();
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
+
+
+
 
   const fetchCurrentUser = async (userId: string) => {
     try {
@@ -231,9 +247,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       updateMinistryImage,
       setAvailability,
       updateSchedule,
-      login, // Now matches async signature
+      login,
       logout,
-      setCurrentUser
+      setCurrentUser,
+      loading
     }}>
       {children}
     </DataContext.Provider>

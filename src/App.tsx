@@ -6,7 +6,16 @@ import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
-  const { currentUser } = useData();
+  const { currentUser, loading } = useData();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sda-blue"></div>
+      </div>
+    );
+  }
+  
   return currentUser ? <>{children}</> : <Navigate to="/login" />;
 };
 
