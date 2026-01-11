@@ -520,16 +520,29 @@ const LeaderDashboard = () => {
                             const details = currentSchedule?.memberDetails?.[id]; // Get details if any
 
                             return (
-                                <li key={id} className="text-sm font-medium text-sda-blue flex items-start">
-                                    <Check className="w-4 h-4 mr-2 mt-1 flex-shrink-0" />
-                                    <div className="flex flex-col">
-                                        <span>{member?.name}</span>
-                                        {details?.singerName && (
-                                            <span className="text-xs text-gray-500 font-normal">
-                                                Cantor(a): <span className="text-gray-700 font-medium">{details.singerName}</span>
-                                            </span>
-                                        )}
+
+                                <li key={id} className="text-sm font-medium text-sda-blue flex items-start justify-between group">
+                                    <div className="flex items-start">
+                                        <Check className="w-4 h-4 mr-2 mt-1 flex-shrink-0" />
+                                        <div className="flex flex-col">
+                                            <span>{member?.name || 'Usuário Desconhecido'}</span>
+                                            {details?.singerName && (
+                                                <span className="text-xs text-gray-500 font-normal">
+                                                    Cantor(a): <span className="text-gray-700 font-medium">{details.singerName}</span>
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
+                                    <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleScheduleMember(id, dateStr);
+                                        }}
+                                        className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Remover membro da escala"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
                                 </li>
                             );
                         })}
