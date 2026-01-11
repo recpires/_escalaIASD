@@ -73,7 +73,7 @@ const MemberDashboard = () => {
     if (!currentUser) return [];
     return schedules
       .filter((s: Schedule) => s.memberIds.includes(currentUser.id))
-      .filter((s: Schedule) => new Date(s.date) >= new Date(new Date().setHours(0,0,0,0))) // Future only
+      .filter((s: Schedule) => new Date(s.date + 'T12:00:00') >= new Date(new Date().setHours(0,0,0,0))) // Future only
       .sort((a: Schedule, b: Schedule) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [currentUser, schedules]);
 
@@ -231,7 +231,7 @@ const MemberDashboard = () => {
                                 const m = ministries.find(min => min.id === s.ministryId);
                                 return (
                                     <div key={s.id} className="text-xs bg-gray-50 p-2 rounded border border-gray-100">
-                                        <div className="font-bold text-gray-800">{new Date(s.date).toLocaleDateString('pt-BR')}</div>
+                                        <div className="font-bold text-gray-800">{new Date(s.date + 'T12:00:00').toLocaleDateString('pt-BR')}</div>
                                         <div className="text-gray-500" style={{ color: m?.color }}>{m?.name}</div>
                                     </div>
                                 );
@@ -248,7 +248,7 @@ const MemberDashboard = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
             <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
                 <h3 className="text-lg font-bold text-gray-900 text-center">Escolha o Ministério</h3>
-                <p className="text-sm text-gray-500 text-center">Para qual ministério você deseja agendar dia {bookingDate && new Date(bookingDate).toLocaleDateString('pt-BR')}?</p>
+                <p className="text-sm text-gray-500 text-center">Para qual ministério você deseja agendar dia {bookingDate && new Date(bookingDate + 'T12:00:00').toLocaleDateString('pt-BR')}?</p>
                 
                 <div className="grid gap-3">
                     {userMinistries.map(m => (
@@ -466,7 +466,7 @@ const LeaderDashboard = () => {
                     type="date" 
                     className="block w-full rounded-md border-gray-300 shadow-sm focus:border-sda-blue focus:ring-sda-blue sm:text-sm p-2 border"
                     value={dateStr}
-                    onChange={(e) => setSelectedDate(new Date(e.target.value))}
+                    onChange={(e) => setSelectedDate(new Date(e.target.value + 'T12:00:00'))}
                  />
                  
                  <div className="mt-6 space-y-4">
@@ -511,7 +511,7 @@ const LeaderDashboard = () => {
             
             <div className="lg:w-1/3 space-y-6">
                 <div className="bg-gray-50 p-6 rounded-xl h-fit">
-                    <h3 className="font-bold text-gray-900 mb-4">Resumo da Escala ({new Date(dateStr).toLocaleDateString('pt-BR')})</h3>
+                    <h3 className="font-bold text-gray-900 mb-4">Resumo da Escala ({new Date(dateStr + 'T12:00:00').toLocaleDateString('pt-BR')})</h3>
                     <p className="text-sm text-gray-600 mb-4">Total Escalados: {scheduledMemberIds.length}</p>
                     
                     <ul className="space-y-3">
