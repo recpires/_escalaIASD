@@ -83,13 +83,17 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
 
   const fetchCurrentUser = async (userId: string) => {
+    console.log(`[fetchCurrentUser] Starting for ${userId}`);
     try {
+      console.log(`[fetchCurrentUser] Selecting profile...`);
       let { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
       
+      console.log(`[fetchCurrentUser] Select result:`, { data, error });
+
       // If profile missing, try to create it (fallback for legacy users or failed triggers)
       if (!data && (error?.code === 'PGRST116' || !error)) { // PGRST116 is 'not found'
          console.warn("Profile missing, attempting to create...");
@@ -97,33 +101,40 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
          const email = userData.user?.email || '';
          const name = userData.user?.user_metadata?.name || email.split('@')[0];
          
+         console.log(`[fetchCurrentUser] Inserting new profile for ${email}...`);
          const { error: insertError } = await supabase.from('profiles').insert({
              id: userId,
              name: name,
              role: 'member' // Default role
          });
+         console.log(`[fetchCurrentUser] Insert result:`, { insertError });
          
          if (!insertError) {
              // Retry fetch
+             console.log(`[fetchCurrentUser] Retrying fetch...`);
              const retry = await supabase.from('profiles').select('*').eq('id', userId).single();
              data = retry.data;
              error = retry.error;
+             console.log(`[fetchCurrentUser] Retry result:`, { data, error });
          }
       }
 
       if (error) throw error;
       
       if (data) {
+        console.log(`[fetchCurrentUser] Setting user state`);
         setCurrentUser({
           id: data.id,
           name: data.name,
-          email: '',
+          email: '', // Email comes from auth.user usually
           role: data.role,
           ministryIds: data.ministry_ids || []
         });
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
+    } finally {
+        console.log(`[fetchCurrentUser] Finished for ${userId}`);
     }
   };
 
