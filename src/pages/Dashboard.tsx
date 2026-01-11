@@ -43,7 +43,7 @@ export const Dashboard = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <BibleVerse />
-        {currentUser.role === 'leader' ? (
+        {(currentUser.role === 'leader' || currentUser.role === 'admin') ? (
           <LeaderDashboard />
         ) : (
           <MemberDashboard />
@@ -55,6 +55,11 @@ export const Dashboard = () => {
 
 const MemberDashboard = () => {
   const { currentUser, ministries, schedules, updateSchedule } = useData();
+// ... (MemberDashboard implementation remains the same, skipping lines for brevity if I could, but replace_file_content needs contiguous)
+// Wait, I can't skip lines in replace_file_content.
+// I should use multi_replace_file_content or just two replace calls.
+// Let's use multi_replace.
+
   const [bookingDate, setBookingDate] = React.useState<string | null>(null);
   const [showMinistryModal, setShowMinistryModal] = React.useState(false);
   const [showSingerModal, setShowSingerModal] = React.useState(false);
@@ -74,19 +79,16 @@ const MemberDashboard = () => {
 
   // Compute calendar metadata (colored dots/backgrounds for scheduled dates)
   const dateMetadata = React.useMemo(() => {
-     const meta: Record<string, { color?: string, selected?: boolean, label?: string }> = {};
+     const meta: Record<string, { colors?: string[], selected?: boolean, label?: string }> = {};
      
      // Mark scheduled dates
      mySchedules.forEach(s => {
          const m = ministries.find(min => min.id === s.ministryId);
          if (m) {
-             // If multiple on same day? Last one wins or we could blend. 
-             // Requirement says "duas cores de agendamento". Simple override for now.
-             meta[s.date] = {
-                 color: m.color || '#3B82F6',
-                 selected: true,
-                 label: m.name
-             };
+             if (!meta[s.date]) {
+                 meta[s.date] = { colors: [], selected: true };
+             }
+             meta[s.date].colors?.push(m.color || '#3B82F6');
          }
      });
      return meta;
@@ -286,7 +288,9 @@ const LeaderDashboard = () => {
   // States for Image Upload
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const ledMinistries = ministries.filter(m => currentUser?.ministryIds.includes(m.id));
+  const ledMinistries = (currentUser?.role === 'admin') 
+    ? ministries 
+    : ministries.filter(m => currentUser?.ministryIds.includes(m.id));
 
   const handleMinistrySelect = (id: string) => {
     setSelectedMinistryId(id);

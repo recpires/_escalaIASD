@@ -1,111 +1,222 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import type { User, Ministry, Availability, AppState, Schedule } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface DataContextType extends AppState {
-  addUser: (user: User) => void;
-  updateUser: (id: string, updates: Partial<User>) => void;
-  updateMinistryImage: (ministryId: string, imageUrl: string) => void;
-  setAvailability: (userId: string, dates: string[]) => void;
-  updateSchedule: (schedule: Schedule) => void; // Added
-  login: (email: string) => boolean;
+  addUser: (user: User) => Promise<boolean>;
+  updateUser: (id: string, updates: Partial<User>) => Promise<void>;
+  updateMinistryImage: (ministryId: string, imageUrl: string) => Promise<void>;
+  setAvailability: (userId: string, dates: string[]) => Promise<void>;
+  updateSchedule: (schedule: Schedule) => Promise<void>;
+  login: (email: string, password?: string) => Promise<boolean>;
   logout: () => void;
   setCurrentUser: (user: User | null) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
-// Initial Mock Data
-const INITIAL_MINISTRIES: Ministry[] = [
-  { id: '1', name: 'Música', imageUrl: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&q=80&w=500', color: '#3B82F6' }, // Blue
-  { id: '2', name: 'Diáconos', imageUrl: 'https://images.unsplash.com/photo-1576089172869-4f5f6f31562e?auto=format&fit=crop&q=80&w=500', color: '#10B981' }, // Green
-  { id: '3', name: 'Diaconisas', imageUrl: 'https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&q=80&w=500', color: '#8B5CF6' }, // Purple
-  { id: '4', name: 'Sonoplastia', imageUrl: 'https://images.unsplash.com/photo-1516280440614-6697288d5d38?auto=format&fit=crop&q=80&w=500', color: '#F59E0B' }, // Amber
-];
-
 export const DataProvider = ({ children }: { children: ReactNode }) => {
-  const [users, setUsers] = useState<User[]>(() => {
-    const saved = localStorage.getItem('sda-users');
-    return saved ? JSON.parse(saved) : [];
-  });
-  
-  const [ministries, setMinistries] = useState<Ministry[]>(() => {
-    const saved = localStorage.getItem('sda-ministries');
-    return saved ? JSON.parse(saved) : INITIAL_MINISTRIES;
-  });
+  const [users, setUsers] = useState<User[]>([]);
+  const [ministries, setMinistries] = useState<Ministry[]>([]);
+  const [availabilities, setAvailabilities] = useState<Availability[]>([]);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  const [availabilities, setAvailabilities] = useState<Availability[]>(() => {
-    const saved = localStorage.getItem('sda-availabilities');
-    return saved ? JSON.parse(saved) : [];
-  });
+  // Initial Data Fetch & Realtime Subscription
+  useEffect(() => {
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        fetchCurrentUser(session.user.id);
+      }
+    });
 
-  const [schedules, setSchedules] = useState<Schedule[]>(() => {
-    const saved = localStorage.getItem('sda-schedules');
-    return saved ? JSON.parse(saved) : [];
-  });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        await fetchCurrentUser(session.user.id);
+      } else if (event === 'SIGNED_OUT') {
+        setCurrentUser(null);
+      }
+    });
 
-  const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('sda-current-user');
-    return saved ? JSON.parse(saved) : null;
-  });
+    fetchInitialData();
+    setupSubscriptions();
 
-  // Persist to LocalStorage
-  useEffect(() => { localStorage.setItem('sda-users', JSON.stringify(users)); }, [users]);
-  useEffect(() => { localStorage.setItem('sda-ministries', JSON.stringify(ministries)); }, [ministries]);
-  useEffect(() => { localStorage.setItem('sda-availabilities', JSON.stringify(availabilities)); }, [availabilities]);
-  useEffect(() => { localStorage.setItem('sda-schedules', JSON.stringify(schedules)); }, [schedules]);
-  useEffect(() => { 
-    if (currentUser) localStorage.setItem('sda-current-user', JSON.stringify(currentUser));
-    else localStorage.removeItem('sda-current-user');
-  }, [currentUser]);
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
-  const addUser = (user: User) => {
-    setUsers(prev => [...prev, user]);
-  };
-
-  const updateUser = (id: string, updates: Partial<User>) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, ...updates } : u));
-    if (currentUser?.id === id) {
-        setCurrentUser(prev => prev ? { ...prev, ...updates } : null);
+  const fetchCurrentUser = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error) throw error;
+      
+      if (data) {
+        setCurrentUser({
+          id: data.id,
+          name: data.name,
+          email: '', // Email comes from auth.user usually
+          role: data.role,
+          ministryIds: data.ministry_ids || []
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
     }
   };
 
-  const updateMinistryImage = (ministryId: string, imageUrl: string) => {
-    setMinistries(prev => prev.map(m => m.id === ministryId ? { ...m, imageUrl } : m));
-  };
-
-  const setAvailability = (userId: string, dates: string[]) => {
-    setAvailabilities(prev => {
-      const existing = prev.find(a => a.userId === userId);
-      if (existing) {
-        return prev.map(a => a.userId === userId ? { ...a, dates } : a);
-      } else {
-        return [...prev, { userId, dates }];
+  const fetchInitialData = async () => {
+      // Fetch Ministries
+      const { data: ministriesData } = await supabase.from('ministries').select('*');
+      if (ministriesData) {
+          setMinistries(ministriesData.map(m => ({
+              id: m.id,
+              name: m.name,
+              imageUrl: m.image_url,
+              color: m.color
+          })));
       }
-    });
-  };
 
-  const updateSchedule = (schedule: Schedule) => {
-    setSchedules(prev => {
-      const existing = prev.find(s => s.id === schedule.id || (s.ministryId === schedule.ministryId && s.date === schedule.date));
-      if (existing) {
-        return prev.map(s => (s.id === existing.id ? schedule : s));
-      } else {
-        return [...prev, schedule];
+      // Fetch Profiles (Users)
+      const { data: profilesData } = await supabase.from('profiles').select('*');
+      if (profilesData) {
+          setUsers(profilesData.map(p => ({
+              id: p.id,
+              name: p.name,
+              email: '',
+              role: p.role,
+              ministryIds: p.ministry_ids || []
+          })));
       }
-    });
+      
+      // Fetch Schedules
+      const { data: schedulesData } = await supabase.from('schedules').select('*');
+      if (schedulesData) {
+          setSchedules(schedulesData.map(s => ({
+              id: s.id,
+              ministryId: s.ministry_id,
+              date: s.date,
+              memberIds: s.member_ids || [],
+              memberDetails: s.member_details || {}
+          })));
+      }
+
+      // Fetch Availabilities
+      const { data: availData } = await supabase.from('availabilities').select('*');
+      if (availData) {
+          setAvailabilities(availData.map(a => ({
+              userId: a.user_id,
+              dates: a.dates || []
+          })));
+      }
   };
 
-  const login = (email: string) => {
-    const user = users.find(u => u.email === email);
-    if (user) {
-      setCurrentUser(user);
-      return true;
+  const setupSubscriptions = () => {
+      // Subscribe to changes
+      supabase.channel('public:all').on('postgres_changes', { event: '*', schema: 'public' }, () => {
+        fetchInitialData(); // Lazy refresh for now
+      }).subscribe();
+  };
+
+  // Actions
+  const addUser = async (user: User) => {
+    try {
+        const { data, error } = await supabase.auth.signUp({
+            email: user.email,
+            password: user.password!,
+            options: {
+                data: {
+                    name: user.name,
+                    role: user.role,
+                    ministry_ids: user.ministryIds
+                }
+            }
+        });
+
+        if (error) throw error;
+        
+        if (data.user) {
+             // Profile trigger ideally handles this, but doing it manually for safety if trigger missing
+             const { error: profileError } = await supabase.from('profiles').insert({
+                 id: data.user.id,
+                 name: user.name,
+                 role: user.role,
+                 ministry_ids: user.ministryIds
+             });
+             // Ignore duplicate key error if trigger already did it
+             if (profileError && !profileError.message.includes('duplicate key')) {
+                 console.error('Error creating profile manually:', profileError);
+             }
+        }
+        return true;
+    } catch (e) {
+        console.error("Registration Error", e);
+        throw e;
     }
-    return false;
+  };
+
+  const updateUser = async (id: string, updates: Partial<User>) => {
+    await supabase.from('profiles').update({
+        name: updates.name,
+        role: updates.role,
+        ministry_ids: updates.ministryIds
+    }).eq('id', id);
+  };
+
+  const updateMinistryImage = async (ministryId: string, imageUrl: string) => {
+      await supabase.from('ministries').update({ image_url: imageUrl }).eq('id', ministryId);
+  };
+
+  const setAvailability = async (userId: string, dates: string[]) => {
+      await supabase.from('availabilities').upsert({
+          user_id: userId,
+          dates: dates,
+          updated_at: new Date().toISOString()
+      });
+  };
+
+  const updateSchedule = async (schedule: Schedule) => {
+      // Remove 'id' from the payload if it's a new generated one, let DB handle it?
+      // Actually, if we use UUIDs, we should probably let DB generate or ensure our local ID is valid UUID.
+      // The current frontend generates "0.something" random IDs. This WILL FAIL uuid validation in Postgres.
+      // We must omit ID if it's new, but our interface requires it.
+      // Strategy: Send without ID if it looks like a math.random ID, or let Supabase generate.
+      
+      const payload: any = {
+          ministry_id: schedule.ministryId,
+          date: schedule.date,
+          member_ids: schedule.memberIds,
+          member_details: schedule.memberDetails,
+          created_at: new Date().toISOString()
+      };
+
+      // Check if ID is a valid UUID (simple check). If not, don't send it, let DB gen new one.
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(schedule.id);
+      if (isUUID) {
+          payload.id = schedule.id;
+      }
+
+      await supabase.from('schedules').upsert(payload);
+  };
+
+  const login = async (email: string, password?: string) => {
+      if (!password) return false;
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+          console.error("Login Error", error);
+          return false;
+      }
+      return !!data.user;
   };
 
   const logout = () => {
-    setCurrentUser(null);
+    supabase.auth.signOut();
   };
 
   return (
@@ -120,7 +231,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       updateMinistryImage,
       setAvailability,
       updateSchedule,
-      login,
+      login, // Now matches async signature
       logout,
       setCurrentUser
     }}>

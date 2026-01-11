@@ -12,15 +12,20 @@ export const Login = () => {
   const { login } = useData();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
-    // Simple Mock Auth
-    if (login(email)) {
-      navigate('/dashboard');
-    } else {
-      setError('Credenciais inválidas. Tente cadastrar um novo usuário.');
+    try {
+      const success = await login(email, password);
+      if (success) {
+        navigate('/dashboard');
+      } else {
+        setError('Credenciais inválidas. Verifique email e senha.');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Ocorreu um erro ao fazer login.');
     }
   };
 
@@ -89,6 +94,8 @@ export const Login = () => {
             </Link>
           </div>
         </form>
+      </div>
+      
       </div>
     </div>
   );

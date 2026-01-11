@@ -12,7 +12,7 @@ const generateId = () => Math.random().toString(36).substr(2, 9);
 
 export const Register = () => {
   const navigate = useNavigate();
-  const { addUser, ministries, login } = useData();
+  const { addUser, ministries } = useData();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -31,7 +31,7 @@ export const Register = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.ministryIds.length === 0) {
       alert('Selecione pelo menos um ministério.');
@@ -39,7 +39,7 @@ export const Register = () => {
     }
 
     const newUser: User = {
-      id: generateId(),
+      id: generateId(), // This ID is largely ignored by Supabase Auth (it uses its own UUIDs) but sent for profile
       name: formData.name,
       email: formData.email,
       role: formData.role,
@@ -47,9 +47,18 @@ export const Register = () => {
       password: formData.password
     };
 
-    addUser(newUser);
-    login(newUser.email); // Auto login
-    navigate('/dashboard');
+    try {
+      await addUser(newUser);
+      // login is handled automatically by signUp (if no email verification) or requires verifying email
+      // We navigate to dashboard. If logic requires login, the ProtectedRoute (if exists) or Dashboard will handle it.
+      // Ideally, we should wait for session to be active, but DataContext subscription handles that.
+      
+      // Short delay to allow subscription to fire if auto-login happened
+      setTimeout(() => navigate('/dashboard'), 500); 
+    } catch (error) {
+      console.error(error);
+      alert('Erro ao criar conta. Tente novamente.');
+    }
   };
 
   return (
@@ -142,7 +151,9 @@ export const Register = () => {
             </div>
           </div>
 
-          {/* Conditional Fields for Music Ministry - Removed as per request */}\n
+          
+
+
 
           <Button type="submit" fullWidth>
             Criar Conta

@@ -22,7 +22,8 @@ interface CalendarProps {
   // Map date -> { color: string (hex or class), label?: string }
   dateMetadata?: {
     [date: string]: {
-      color?: string;
+      color?: string; // Backwards compatibility
+      colors?: string[]; // Multiple colors
       label?: string;
       selected?: boolean;
     }
@@ -79,37 +80,37 @@ export const Calendar: React.FC<CalendarProps> = ({ selectedDates = [], dateMeta
           const isCurrentMonth = isSameMonth(day, currentMonth);
           const isDayToday = isToday(day);
           
-          // Determine styling based on metadata
-          let customStyle = {};
-          let customClass = "";
-          
-          if (metadata?.color) {
-            // Check if it's a tailwind class or hex
-            if (metadata.color.startsWith('bg-') || metadata.color.startsWith('text-')) {
-               customClass = metadata.color;
-            } else {
-               customStyle = { backgroundColor: metadata.color, color: '#fff' };
-            }
-          }
+          const colors = metadata?.colors || (metadata?.color ? [metadata.color] : []);
 
           return (
-            <button
-              key={dateStr}
-              onClick={() => onDateClick(dateStr)}
-              style={customStyle}
-              className={clsx(
-                "h-10 w-full rounded-lg flex items-center justify-center text-sm transition-all focus:outline-none focus:ring-2 focus:ring-sda-blue/50",
-                !isCurrentMonth && "text-gray-300",
-                isCurrentMonth && !metadata?.color && "text-gray-700 hover:bg-gray-100",
-                // Default selection style if no custom color provided
-                isSelected && !metadata?.color && "bg-sda-blue text-white font-bold hover:bg-sda-blue/90 shadow-sm",
-                // Today style
-                isDayToday && !isSelected && !metadata?.color && "border border-sda-gold text-sda-blue font-bold",
-                customClass
-              )}
-            >
-              {format(day, 'd')}
-            </button>
+            <div key={dateStr} className="relative w-full aspect-square">
+              <button
+                onClick={() => onDateClick(dateStr)}
+                className={clsx(
+                  "w-full h-full rounded-lg flex flex-col items-center justify-center text-sm transition-all focus:outline-none focus:ring-2 focus:ring-sda-blue/50",
+                  !isCurrentMonth && "text-gray-300",
+                  isCurrentMonth && "text-gray-700 hover:bg-gray-50",
+                  isSelected && colors.length === 0 && "bg-sda-blue text-white font-bold hover:bg-sda-blue/90 shadow-sm", // Fallback if no colors but selected
+                  isDayToday && !isSelected && "border border-sda-gold text-sda-blue font-bold",
+                )}
+              >
+                <span className={clsx(
+                   "text-sm mb-0.5",
+                   isSelected && colors.length === 0 && "text-white"
+                )}>{format(day, 'd')}</span>
+                
+                {/* Dots Container */}
+                <div className="flex gap-0.5 justify-center flex-wrap max-w-[80%] px-0.5">
+                   {colors.map((color, idx) => (
+                      <div 
+                        key={idx} 
+                        className="w-1.5 h-1.5 rounded-full" 
+                        style={{ backgroundColor: color }}
+                      />
+                   ))}
+                </div>
+              </button>
+            </div>
           );
         })}
       </div>
