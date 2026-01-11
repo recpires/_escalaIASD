@@ -25,7 +25,9 @@ export const Login = () => {
       }
     } catch (err) {
       console.error(err);
-      setError('Ocorreu um erro ao fazer login.');
+      // Show actual error message for debugging
+      const errorMessage = (err as any).message || 'Ocorreu um erro ao fazer login.';
+      setError(errorMessage);
     }
   };
 
