@@ -86,11 +86,21 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     console.log(`[fetchCurrentUser] Starting for ${userId}`);
     try {
       console.log(`[fetchCurrentUser] Selecting profile...`);
-      let { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      
+      // Create a timeout promise
+      const timeoutPromise = new Promise<{ data: any, error: any }>((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout ao buscar perfil')), 10000)
+      );
+
+      // Race against the actual query
+      let { data, error } = await Promise.race([
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single(),
+        timeoutPromise
+      ]);
       
       console.log(`[fetchCurrentUser] Select result:`, { data, error });
 
