@@ -423,7 +423,7 @@ const LeaderDashboard = () => {
   }
 
   const selectedMinistry = ministries.find(m => m.id === selectedMinistryId);
-  const ministryMembers = users.filter(u => u.ministryIds.includes(selectedMinistryId) && u.role === 'member');
+  const ministryMembers = users.filter(u => u.ministryIds.includes(selectedMinistryId));
   const dateStr = selectedDate.toISOString().split('T')[0];
   const currentSchedule = schedules.find(s => s.ministryId === selectedMinistryId && s.date === dateStr);
   const scheduledMemberIds = currentSchedule?.memberIds || [];
