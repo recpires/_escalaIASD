@@ -228,6 +228,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           console.error("Login Error", error);
           return false;
       }
+      
+      if (data.user) {
+          // Explicitly wait for profile to be loaded before returning
+          await fetchCurrentUser(data.user.id);
+      }
+      
       return !!data.user;
   };
 
