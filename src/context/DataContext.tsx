@@ -8,7 +8,7 @@ interface DataContextType extends AppState {
   updateMinistryImage: (ministryId: string, imageUrl: string) => Promise<void>;
   setAvailability: (userId: string, dates: string[]) => Promise<void>;
   updateSchedule: (schedule: Schedule) => Promise<void>;
-  login: (email: string, password?: string) => Promise<boolean>;
+  login: (email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   setCurrentUser: (user: User | null) => void;
   loading: boolean;
@@ -82,7 +82,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
 
 
-  const fetchCurrentUser = async (userId: string) => {
+  const fetchCurrentUser = async (userId: string): Promise<{ success: boolean; error?: string }> => {
     console.log(`[fetchCurrentUser] Starting for ${userId}`);
     try {
       console.log(`[fetchCurrentUser] Selecting profile...`);
@@ -102,13 +102,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
          const name = userData.user?.user_metadata?.name || email.split('@')[0];
          
          console.log(`[fetchCurrentUser] Inserting new profile for ${email}...`);
+         // Include ministry_ids to ensure no constraint issues
          const { error: insertError } = await supabase.from('profiles').insert({
              id: userId,
              name: name,
-             role: 'member' // Default role
+             role: 'member', // Default role
+             ministry_ids: [] 
          });
          console.log(`[fetchCurrentUser] Insert result:`, { insertError });
          
+         if (insertError) {
+             return { success: false, error: `Erro ao criar perfil: ${insertError.message}` };
+         }
+
          if (!insertError) {
              // Retry fetch
              console.log(`[fetchCurrentUser] Retrying fetch...`);
@@ -119,7 +125,9 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
          }
       }
 
-      if (error) throw error;
+      if (error) {
+           return { success: false, error: `Erro ao buscar perfil: ${error.message}` };
+      }
       
       if (data) {
         console.log(`[fetchCurrentUser] Setting user state`);
@@ -130,12 +138,12 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           role: data.role,
           ministryIds: data.ministry_ids || []
         });
-        return true;
+        return { success: true };
       }
-      return false;
-    } catch (error) {
+      return { success: false, error: 'Perfil não encontrado após tentativa de criação.' };
+    } catch (error: any) {
       console.error('Error fetching user profile:', error);
-      return false;
+      return { success: false, error: error.message || 'Erro desconhecido ao carregar perfil.' };
     } finally {
         console.log(`[fetchCurrentUser] Finished for ${userId}`);
     }
@@ -285,20 +293,20 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const login = async (email: string, password?: string) => {
-      if (!password) return false;
+      if (!password) return { success: false, error: 'Senha obrigatória' };
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
           console.error("Login Error", error);
-          return false;
+          return { success: false, error: error.message };
       }
       
-      let profileLoaded = false;
+      let profileResult: { success: boolean; error?: string } = { success: false, error: 'Perfil não carregado' };
       if (data.user) {
           // Explicitly wait for profile to be loaded before returning
-          profileLoaded = await fetchCurrentUser(data.user.id);
+          profileResult = await fetchCurrentUser(data.user.id);
       }
       
-      return !!data.user && profileLoaded;
+      return profileResult;
   };
 
   const logout = () => {

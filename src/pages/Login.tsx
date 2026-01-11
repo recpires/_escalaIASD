@@ -17,15 +17,15 @@ export const Login = () => {
     setError('');
     
     try {
-      const success = await login(email, password);
-      if (success) {
+      const result = await login(email, password);
+      if (result.success) {
         navigate('/dashboard');
       } else {
-        setError('Credenciais inválidas. Verifique email e senha.');
+        // Show specific error from backend/Supabase
+        setError(result.error || 'Credenciais inválidas ou erro no sistema.');
       }
     } catch (err) {
       console.error(err);
-      // Show actual error message for debugging
       const errorMessage = (err as any).message || 'Ocorreu um erro ao fazer login.';
       setError(errorMessage);
     }
