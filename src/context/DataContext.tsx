@@ -28,22 +28,40 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
+    // Safety timeout to prevent infinite loading
+    const safetyTimeout = setTimeout(() => {
+        if (mounted && loading) {
+            console.warn("Auth initialization timed out, forcing loading=false");
+            setLoading(false);
+        }
+    }, 5000);
+
     const initAuth = async () => {
+      console.log("Initializing Auth...");
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
+          console.log("Session found, fetching user profile...");
           await fetchCurrentUser(session.user.id);
+          console.log("User profile fetched.");
+        } else {
+            console.log("No session found.");
         }
       } catch (error) {
         console.error("Auth init error:", error);
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) {
+            console.log("Auth init complete, setting loading=false");
+            setLoading(false);
+            clearTimeout(safetyTimeout);
+        }
       }
     };
 
     initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth State Change:", event);
       if (event === 'SIGNED_IN' && session?.user) {
         await fetchCurrentUser(session.user.id);
       } else if (event === 'SIGNED_OUT') {
@@ -56,6 +74,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       mounted = false;
+      clearTimeout(safetyTimeout);
       subscription.unsubscribe();
     };
   }, []);
