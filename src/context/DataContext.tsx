@@ -8,6 +8,7 @@ interface DataContextType extends AppState {
   updateMinistryImage: (ministryId: string, imageUrl: string) => Promise<void>;
   setAvailability: (userId: string, dates: string[]) => Promise<void>;
   updateSchedule: (schedule: Schedule) => Promise<void>;
+  deleteSchedule: (scheduleId: string) => Promise<void>;
   login: (email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   setCurrentUser: (user: User | null) => void;
@@ -302,6 +303,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       await supabase.from('schedules').upsert(payload);
   };
 
+  const deleteSchedule = async (scheduleId: string) => {
+    await supabase.from('schedules').delete().eq('id', scheduleId);
+    setSchedules(prev => prev.filter(s => s.id !== scheduleId));
+  };
+
   const login = async (email: string, password?: string) => {
       if (!password) return { success: false, error: 'Senha obrigatória' };
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -335,6 +341,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       updateMinistryImage,
       setAvailability,
       updateSchedule,
+      deleteSchedule,
       login,
       logout,
       setCurrentUser,

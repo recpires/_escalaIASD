@@ -2,7 +2,7 @@ import React from 'react';
 import { useData } from '../context/DataContext';
 import { Button } from '../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, User, Check } from 'lucide-react';
+import { LogOut, User, Check, Trash2 } from 'lucide-react';
 import { Calendar } from '../components/Calendar';
 import { BibleVerse } from '../components/BibleVerse';
 import type { Schedule } from '../types';
@@ -308,7 +308,7 @@ const MemberDashboard = () => {
 };
 
 const LeaderDashboard = () => {
-  const { currentUser, ministries, users, availabilities, schedules, updateSchedule, updateMinistryImage } = useData();
+  const { currentUser, ministries, users, availabilities, schedules, updateSchedule, updateMinistryImage, deleteSchedule } = useData();
   const [viewMode, setViewMode] = React.useState<'management' | 'personal'>('management');
   const [selectedMinistryId, setSelectedMinistryId] = React.useState<string | null>(null);
   const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());
@@ -428,6 +428,14 @@ const LeaderDashboard = () => {
   const currentSchedule = schedules.find(s => s.ministryId === selectedMinistryId && s.date === dateStr);
   const scheduledMemberIds = currentSchedule?.memberIds || [];
 
+  const handleDeleteSchedule = async () => {
+      if (!currentSchedule) return;
+      if (confirm('Tem certeza que deseja excluir esta escala? Todos os agendamentos desta data serão removidos.')) {
+          await deleteSchedule(currentSchedule.id);
+          alert('Escala excluída com sucesso.');
+      }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -526,6 +534,19 @@ const LeaderDashboard = () => {
                             );
                         })}
                     </ul>
+
+                    {currentSchedule && (
+                        <div className="mt-6 pt-4 border-t border-gray-200">
+                            <Button 
+                                variant="ghost" 
+                                className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 flex items-center justify-center gap-2"
+                                onClick={handleDeleteSchedule}
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                Excluir Escala
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -541,7 +562,8 @@ const LeaderDashboard = () => {
                      const monthlySchedules = schedules
                         .filter(s => s.ministryId === selectedMinistryId)
                         .filter(s => {
-                            const d = new Date(s.date);
+                            // Fix Timezone: append time to ensure it stays in same day for local comparison
+                            const d = new Date(s.date + 'T12:00:00'); 
                             return d >= startMonth && d <= endMonth;
                         })
                         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -553,14 +575,14 @@ const LeaderDashboard = () => {
                      return monthlySchedules.map(schedule => (
                          <div 
                             key={schedule.id} 
-                            onClick={() => setSelectedDate(new Date(schedule.date))}
+                            onClick={() => setSelectedDate(new Date(schedule.date + 'T12:00:00'))}
                             className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
                                 schedule.date === dateStr ? 'border-sda-blue bg-blue-50' : 'border-gray-200 bg-white hover:border-gray-300'
                             }`}
                          >
                              <div className="flex justify-between items-center mb-2">
                                  <span className="font-bold text-gray-900 capitalize">
-                                     {new Date(schedule.date).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric' })}
+                                     {new Date(schedule.date + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric' })}
                                  </span>
                                  <span className="text-xs font-medium px-2 py-1 bg-gray-100 rounded-full text-gray-600">
                                      {schedule.memberIds.length} escalados
