@@ -2,7 +2,7 @@ import React from 'react';
 import { useData } from '../context/DataContext';
 import { Button } from '../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, User, Check, Trash2 } from 'lucide-react';
+import { LogOut, User, Check, Trash2, Pencil } from 'lucide-react';
 import { Calendar } from '../components/Calendar';
 import { BibleVerse } from '../components/BibleVerse';
 import type { Schedule } from '../types';
@@ -313,6 +313,11 @@ const LeaderDashboard = () => {
   const [selectedMinistryId, setSelectedMinistryId] = React.useState<string | null>(null);
   const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());
   
+  // Edit State
+  const [editingMemberId, setEditingMemberId] = React.useState<string | null>(null);
+  const [showEditModal, setShowEditModal] = React.useState(false);
+  const [editData, setEditData] = React.useState({ singerName: '', phone: '' });
+
   // States for Image Upload
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -436,6 +441,35 @@ const LeaderDashboard = () => {
       }
   };
 
+  const handleEditClick = (memberId: string, details?: { singerName?: string, phone?: string }) => {
+      setEditingMemberId(memberId);
+      setEditData({
+          singerName: details?.singerName || '',
+          phone: details?.phone || ''
+      });
+      setShowEditModal(true);
+  };
+
+  const handleSaveEdit = () => {
+      if (!currentSchedule || !editingMemberId) return;
+      
+      const newDetails = {
+          ...currentSchedule.memberDetails,
+          [editingMemberId]: {
+              singerName: editData.singerName,
+              phone: editData.phone
+          }
+      };
+
+      updateSchedule({
+          ...currentSchedule,
+          memberDetails: newDetails
+      });
+
+      setShowEditModal(false);
+      setEditingMemberId(null);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -533,16 +567,28 @@ const LeaderDashboard = () => {
                                             )}
                                         </div>
                                     </div>
-                                    <button 
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            toggleScheduleMember(id, dateStr);
-                                        }}
-                                        className="text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Remover membro da escala"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleEditClick(id, details);
+                                            }}
+                                            className="text-gray-400 hover:text-sda-blue p-1 mr-1"
+                                            title="Editar detalhes"
+                                        >
+                                            <Pencil className="w-4 h-4" />
+                                        </button>
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                toggleScheduleMember(id, dateStr);
+                                            }}
+                                            className="text-gray-400 hover:text-red-500 p-1"
+                                            title="Remover membro da escala"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </li>
                             );
                         })}
@@ -558,7 +604,44 @@ const LeaderDashboard = () => {
                                 <Trash2 className="w-4 h-4" />
                                 Excluir Escala
                             </Button>
+        
+                    {/* Edit Modal */}
+                    {showEditModal && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
+                            <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
+                                <h3 className="text-lg font-bold text-gray-900 text-center">Editar Detalhes</h3>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">Nome do Cantor/Grupo</label>
+                                        <input 
+                                            type="text"
+                                            value={editData.singerName}
+                                            onChange={(e) => setEditData({...editData, singerName: e.target.value})}
+                                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-sda-blue focus:ring-sda-blue sm:text-sm p-2 border"
+                                            placeholder="Ex: Fulano de Tal"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700 mb-1">Telefone / WhatsApp</label>
+                                        <input 
+                                            type="text"
+                                            value={editData.phone}
+                                            onChange={(e) => setEditData({...editData, phone: e.target.value})}
+                                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-sda-blue focus:ring-sda-blue sm:text-sm p-2 border"
+                                            placeholder="(00) 00000-0000"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex gap-3 pt-2">
+                                    <Button variant="ghost" fullWidth onClick={() => setShowEditModal(false)}>Cancelar</Button>
+                                    <Button fullWidth onClick={handleSaveEdit}>
+                                        Salvar
+                                    </Button>
+                                </div>
+                            </div>
                         </div>
+                    )}
+                </div>
                     )}
                 </div>
             </div>
