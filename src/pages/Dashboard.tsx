@@ -231,7 +231,7 @@ const MemberDashboard = () => {
                                 const m = ministries.find(min => min.id === s.ministryId);
                                 return (
                                     <div key={s.id} className="text-xs bg-gray-50 p-2 rounded border border-gray-100">
-                                        <div className="font-bold text-gray-800">{new Date(s.date + 'T12:00:00').toLocaleDateString('pt-BR')}</div>
+                                        <div className="font-bold text-gray-800">{s.date.split('-').reverse().join('/')}</div>
                                         <div className="text-gray-500" style={{ color: m?.color }}>{m?.name}</div>
                                     </div>
                                 );
@@ -248,7 +248,7 @@ const MemberDashboard = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
             <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
                 <h3 className="text-lg font-bold text-gray-900 text-center">Escolha o Ministério</h3>
-                <p className="text-sm text-gray-500 text-center">Para qual ministério você deseja agendar dia {bookingDate && new Date(bookingDate + 'T12:00:00').toLocaleDateString('pt-BR')}?</p>
+                <p className="text-sm text-gray-500 text-center">Para qual ministério você deseja agendar dia {bookingDate && bookingDate.split('-').reverse().join('/')}?</p>
                 
                 <div className="grid gap-3">
                     {userMinistries.map(m => (
@@ -511,7 +511,7 @@ const LeaderDashboard = () => {
             
             <div className="lg:w-1/3 space-y-6">
                 <div className="bg-gray-50 p-6 rounded-xl h-fit">
-                    <h3 className="font-bold text-gray-900 mb-4">Resumo da Escala ({new Date(dateStr + 'T12:00:00').toLocaleDateString('pt-BR')})</h3>
+                    <h3 className="font-bold text-gray-900 mb-4">Resumo da Escala ({dateStr.split('-').reverse().join('/')})</h3>
                     <p className="text-sm text-gray-600 mb-4">Total Escalados: {scheduledMemberIds.length}</p>
                     
                     <ul className="space-y-3">
