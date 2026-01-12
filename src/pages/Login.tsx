@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { Button } from '../components/ui/Button';
+import { Footer } from '../components/Footer';
 import { Input } from '../components/ui/Input';
 
 
@@ -97,6 +98,8 @@ export const Login = () => {
           </div>
         </form>
       </div>
+      
+      <Footer className="text-white/60 absolute bottom-0 z-10" />
     </div>
   );
 };

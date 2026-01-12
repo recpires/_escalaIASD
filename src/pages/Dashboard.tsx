@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { LogOut, User, Check, Trash2, Pencil } from 'lucide-react';
 import { Calendar } from '../components/Calendar';
 import { BibleVerse } from '../components/BibleVerse';
+import { Footer } from '../components/Footer';
 import type { Schedule } from '../types';
 
 
@@ -20,7 +21,7 @@ export const Dashboard = () => {
   if (!currentUser) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <header className="bg-sda-blue text-white shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -41,7 +42,7 @@ export const Dashboard = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
         <BibleVerse />
         {(currentUser.role === 'leader' || currentUser.role === 'admin') ? (
           <LeaderDashboard />
@@ -49,6 +50,7 @@ export const Dashboard = () => {
           <MemberDashboard />
         )}
       </main>
+      <Footer />
     </div>
   );
 };

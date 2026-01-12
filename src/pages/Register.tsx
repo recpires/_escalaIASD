@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { Button } from '../components/ui/Button';
+import { Footer } from '../components/Footer';
 import { Input } from '../components/ui/Input';
 import type { User, Role } from '../types';
 import { Check, Shield, User as UserIcon } from 'lucide-react';
@@ -62,7 +63,8 @@ export const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8">
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="flex-grow flex items-center justify-center px-4 py-8">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg border border-gray-100">
         <div className="text-center">
           <h2 className="text-3xl font-bold text-gray-900">Criar Conta</h2>
@@ -163,6 +165,8 @@ export const Register = () => {
           </div>
         </form>
       </div>
+      </div>
+      <Footer />
     </div>
   );
 };
