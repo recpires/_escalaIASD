@@ -99,7 +99,7 @@ export const Login = () => {
         </form>
       </div>
       
-      <Footer className="text-white/60 absolute bottom-0 z-10" />
+      <Footer className="text-white/90 font-medium absolute bottom-4 z-10" />
     </div>
   );
 };
